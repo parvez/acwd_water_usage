@@ -15,6 +15,7 @@ _LOGGER = logging.getLogger(__name__)
 BASE_URL = "https://portal.acwd.org/portal/"
 DEFAULT_API_PREFIX = BASE_URL + "default.aspx/"
 USAGES_API_PREFIX = BASE_URL + "Usages.aspx/"
+BILLING_API_PREFIX = BASE_URL + "BillDashboard.aspx/"
 
 class AcwdWaterUsageSensor(Entity):
     """Representation of an ACWD Water Usage Sensor."""
@@ -28,6 +29,7 @@ class AcwdWaterUsageSensor(Entity):
         self.session = requests.Session()
         self.csrf_token = None
         self.meter_number = None
+        self.billing_details = {}
         self.dates = []
         self.time_series_data = []  # List to store time series data
         _LOGGER.info("ACWD Water Usage Sensor initialized")
@@ -58,6 +60,7 @@ class AcwdWaterUsageSensor(Entity):
                 return None
 
         self.meter_number = self.bind_multi_meter()
+        self.billing_details = self.get_billing_data()
         if not self.meter_number:
             _LOGGER.error("Failed to bind meter for water usage data")
             return None
@@ -105,6 +108,8 @@ class AcwdWaterUsageSensor(Entity):
                     "ASP.NET_SessionId": self.session.cookies.get("ASP.NET_SessionId"),
                     "start_date": self.dates[0],
                     "end_date": self.dates[-1],
+                    "bill_due_date": self.billing_details.get('BillDue'),
+                    "bill_due_amount": self.billing_details.get('TotalBill'),
                 }
         except Exception as e:
             _LOGGER.error("Error updating water usage data: %s", e)
@@ -147,6 +152,17 @@ class AcwdWaterUsageSensor(Entity):
         _LOGGER.warning("Meter details failed: No response data")
         return None
 
+    def get_billing_data(self):
+        api_url = BILLING_API_PREFIX + "LoadBilling"
+        headers = self.get_api_headers()
+        data = {"IsDashboard": 1}
+
+        response_json = self.make_api_request(api_url, headers, data, False)
+        if response_json:
+            return response_json
+        _LOGGER.warning("Billing details failed: No response data")
+        return None
+
     def is_session_valid(self):
         return self.meter_number is not None
 
@@ -169,7 +185,7 @@ class AcwdWaterUsageSensor(Entity):
 
         return self.make_api_request(api_url, headers, data)
 
-    def make_api_request(self, url, headers, data):
+    def make_api_request(self, url, headers, data, extract_json=True):
         _LOGGER.debug(f"Sending request to URL: {url}")
         _LOGGER.debug(f"Request headers: {headers}")
         _LOGGER.debug(f"Request data: {data}")
@@ -181,7 +197,10 @@ class AcwdWaterUsageSensor(Entity):
         try:
             response_json =  response.json()
             if response_json:
-                return self.extract_json_from_response(response_json, 'd')
+                if extract_json:
+                    return self.extract_json_from_response(response_json, 'd')
+                else:
+                    return response_json.get('d', {})
             return None
         except json.JSONDecodeError as e:
             _LOGGER.error(f"Failed to decode JSON from response: {e}")
