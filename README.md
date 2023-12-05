@@ -15,6 +15,12 @@ The ACWD Water Usage Sensor is an integration for Home Assistant that enables us
 2. **Data Processing**: The data is processed and formatted to be compatible with Home Assistant's standards.
 3. **Visualization**: Users can view their usage data through custom Lovelace cards, offering a comprehensive view of consumption over specified periods.
 
+## Caveat
+
+Please note that due to the data retrieval policies of the Alameda County Water District (ACWD) portal, water usage data for the last 24 hours may not be available. The integration will display the most recent data provided by the ACWD portal, which may exclude the past day's usage.
+
+We recommend users to take this into consideration when viewing their water usage data and to plan any water usage analysis or automation accordingly.
+
 ## Setup and Configuration
 
 ### Prerequisites
