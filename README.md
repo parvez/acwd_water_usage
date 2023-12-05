@@ -15,6 +15,22 @@ The ACWD Water Usage Sensor is an integration for Home Assistant that enables us
 2. **Data Processing**: The data is processed and formatted to be compatible with Home Assistant's standards.
 3. **Visualization**: Users can view their usage data through custom Lovelace cards, offering a comprehensive view of consumption over specified periods.
 
+## Configuration
+
+Once you have installed the ACWD Water Usage Sensor integration, you can configure it directly from the Home Assistant UI:
+
+1. Navigate to **Settings** > **Devices & Services** in Home Assistant.
+2. Click the **+ ADD INTEGRATION** button at the bottom right of the page.
+3. Search for "ACWD Water Usage" in the list of integrations and select it.
+4. When prompted, enter your ACWD portal credentials:
+    - **Username**: Enter the username associated with your ACWD account.
+    - **Password**: Enter the password for your ACWD account.
+5. After entering your credentials, click **SUBMIT** to log in and retrieve your water usage data.
+
+<img width="350" alt="ACWD Water Usage Login" src="https://github.com/parvez/acwd_water_usage/assets/126749/eb7a691b-0adb-4539-8d08-8005f39b85f2">
+
+Please ensure that you enter the correct credentials to avoid any login issues. The integration will securely store and use these credentials to fetch your water usage data from the ACWD portal.
+
 ## Caveat
 
 Please note that due to the data retrieval policies of the Alameda County Water District (ACWD) portal, water usage data for the last 24 hours may not be available. The integration will display the most recent data provided by the ACWD portal, which may exclude the past day's usage.
