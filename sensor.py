@@ -28,6 +28,7 @@ class AcwdWaterUsageSensor(Entity):
         self.session = requests.Session()
         self.csrf_token = None
         self.meter_number = None
+        self.date = None
         self.time_series_data = []  # List to store time series data
         _LOGGER.info("ACWD Water Usage Sensor initialized")
 
@@ -61,10 +62,11 @@ class AcwdWaterUsageSensor(Entity):
             _LOGGER.error("Failed to bind meter for water usage data")
             return None
 
-        strDate = self.get_date_x_days_ago(1)
-        water_usage_response = self.call_load_water_usage_api("G", "H", strDate)
+        self.date = self.get_date_x_days_ago(2)
+        water_usage_response = self.call_load_water_usage_api("G", "H")
         if water_usage_response:
             records = water_usage_response.get('objUsageGenerationResultSetTwo', [])
+            _LOGGER.debug("usage data", records)
             formatted_records = []
             for record in records:
                 usage_date_str = record.get('UsageDate')
@@ -86,11 +88,25 @@ class AcwdWaterUsageSensor(Entity):
 
     async def async_update(self):
         try:
+            _LOGGER.debug("Getting Time Series Data")
             new_data = await self.hass.async_add_executor_job(self.get_water_usage)
             if new_data:
                 self.time_series_data.extend(new_data)
-                self._state = new_data[-1][1]  # Latest water usage value
-                self._attr_extra_state_attributes = {"time_series": self.time_series_data}
+
+                # Calculate the total gallons by summing up the usage values
+                total_gallons = sum(value for _, value in self.time_series_data)
+                
+                # Update the state with the total gallons
+                self._state = total_gallons
+
+                self._attr_extra_state_attributes = {
+                    "time_series": self.time_series_data,
+                    "username": self.username,
+                    "meter_number": self.meter_number,
+                    "csrf_token": self.csrf_token,
+                    "ASP.NET_SessionId": self.session.cookies.get("ASP.NET_SessionId"),
+                    "date": self.date,
+                }
         except Exception as e:
             _LOGGER.error("Error updating water usage data: %s", e)
 
@@ -121,7 +137,6 @@ class AcwdWaterUsageSensor(Entity):
         _LOGGER.warning("Login failed: No response data")
         return False
 
-
     def bind_multi_meter(self):
         api_url = USAGES_API_PREFIX + "BindMultiMeter"
         headers = self.get_api_headers()
@@ -136,13 +151,13 @@ class AcwdWaterUsageSensor(Entity):
     def is_session_valid(self):
         return self.meter_number is not None
 
-    def call_load_water_usage_api(self, type, mode, strDate):
+    def call_load_water_usage_api(self, type, mode):
         api_url = USAGES_API_PREFIX + "LoadWaterUsage"
         headers = self.get_api_headers()
         data = {
             "Type": type,
             "Mode": mode,
-            "strDate": strDate,
+            "strDate": self.date,
             "hourlyType": "H",
             "seasonId": 0,
             "weatherOverlay": 0,
