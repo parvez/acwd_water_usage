@@ -28,7 +28,7 @@ class AcwdWaterUsageSensor(Entity):
         self.session = requests.Session()
         self.csrf_token = None
         self.meter_number = None
-        self.date = None
+        self.dates = []
         self.time_series_data = []  # List to store time series data
         _LOGGER.info("ACWD Water Usage Sensor initialized")
 
@@ -49,8 +49,8 @@ class AcwdWaterUsageSensor(Entity):
     def unit_of_measurement(self):
         return 'gallons'
 
-    def get_water_usage(self):
-        """Fetch the water usage data."""
+    def get_water_usage(self, num_days=3):
+        """Fetch and combine water usage data for a specified number of past days."""
         if not self.is_session_valid():
             login_success = self.login()
             if not login_success:
@@ -62,34 +62,32 @@ class AcwdWaterUsageSensor(Entity):
             _LOGGER.error("Failed to bind meter for water usage data")
             return None
 
-        self.date = self.get_date_x_days_ago(2)
-        water_usage_response = self.call_load_water_usage_api("G", "H")
-        if water_usage_response:
-            records = water_usage_response.get('objUsageGenerationResultSetTwo', [])
-            _LOGGER.debug("usage data", records)
-            formatted_records = []
-            for record in records:
-                usage_date_str = record.get('UsageDate')
-                hourly_str = record.get('Hourly')
-                usage_value = record.get('UsageValue', 0)
-                
-                # Combine date and time into a single datetime object
-                datetime_str = f"{usage_date_str} {hourly_str}"
-                datetime_obj = datetime.strptime(datetime_str, "%B %d, %Y %I:%M %p")
-                # Convert datetime object to an ISO format string
-                datetime_iso_str = datetime_obj.isoformat()
-                
-                formatted_records.append((datetime_iso_str, usage_value))
+        all_records = []
+        for day in range(num_days, 0, -1):
+            date_str = self.get_date_x_days_ago(day)
+            self.dates.append(date_str)
+            water_usage_response = self.call_load_water_usage_api("G", "H", date_str)
+            if water_usage_response:
+                records = water_usage_response.get('objUsageGenerationResultSetTwo', [])
+                for record in records:
+                    usage_date_str = record.get('UsageDate')
+                    hourly_str = record.get('Hourly')
+                    usage_value = record.get('UsageValue', 0)
 
-            return formatted_records
-        else:
-            _LOGGER.error("Failed to fetch water usage data")
-            return []
+                    datetime_str = f"{usage_date_str} {hourly_str}"
+                    datetime_obj = datetime.strptime(datetime_str, "%B %d, %Y %I:%M %p")
+                    datetime_iso_str = datetime_obj.isoformat()
+
+                    all_records.append((datetime_iso_str, usage_value))
+            else:
+                _LOGGER.error(f"Failed to fetch water usage data for {date_str}")
+
+        return all_records
 
     async def async_update(self):
         try:
             _LOGGER.debug("Getting Time Series Data")
-            new_data = await self.hass.async_add_executor_job(self.get_water_usage)
+            new_data = await self.hass.async_add_executor_job(self.get_water_usage, 7)  # Fetch data for 7 days
             if new_data:
                 self.time_series_data.extend(new_data)
 
@@ -105,7 +103,8 @@ class AcwdWaterUsageSensor(Entity):
                     "meter_number": self.meter_number,
                     "csrf_token": self.csrf_token,
                     "ASP.NET_SessionId": self.session.cookies.get("ASP.NET_SessionId"),
-                    "date": self.date,
+                    "start_date": self.dates[0],
+                    "end_date": self.dates[-1],
                 }
         except Exception as e:
             _LOGGER.error("Error updating water usage data: %s", e)
@@ -151,13 +150,13 @@ class AcwdWaterUsageSensor(Entity):
     def is_session_valid(self):
         return self.meter_number is not None
 
-    def call_load_water_usage_api(self, type, mode):
+    def call_load_water_usage_api(self, type, mode, str_date):
         api_url = USAGES_API_PREFIX + "LoadWaterUsage"
         headers = self.get_api_headers()
         data = {
             "Type": type,
             "Mode": mode,
-            "strDate": self.date,
+            "strDate": str_date,
             "hourlyType": "H",
             "seasonId": 0,
             "weatherOverlay": 0,
