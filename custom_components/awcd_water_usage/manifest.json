@@ -1,9 +1,0 @@
-{
-  "domain": "acwd_water_usage",
-  "name": "ACWD Water Usage",
-  "documentation": "https://github.com/parvez/acwd_water_usage",
-  "dependencies": [],
-  "codeowners": ["@parvez"],
-  "requirements": ["beautifulsoup4", "requests"],
-  "version": "1.0.0"
-}
