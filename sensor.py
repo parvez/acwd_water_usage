@@ -6,8 +6,8 @@ from datetime import datetime, timedelta
 from bs4 import BeautifulSoup
 from homeassistant.helpers.entity import Entity
 
-# Set the scan interval to 6 hours
-SCAN_INTERVAL = timedelta(hours=6)
+# Set the scan interval to 3 hours
+SCAN_INTERVAL = timedelta(hours=3)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -53,11 +53,10 @@ class AcwdWaterUsageSensor(Entity):
 
     def get_water_usage(self, num_days=3):
         """Fetch and combine water usage data for a specified number of past days."""
-        if not self.is_session_valid():
-            login_success = self.login()
-            if not login_success:
-                _LOGGER.error("Failed to log in for water usage data")
-                return None
+        login_success = self.login()
+        if not login_success:
+            _LOGGER.error("Failed to log in for water usage data")
+            return None
 
         self.meter_number = self.bind_multi_meter()
         self.billing_details = self.get_billing_data()
@@ -85,6 +84,7 @@ class AcwdWaterUsageSensor(Entity):
             else:
                 _LOGGER.error(f"Failed to fetch water usage data for {date_str}")
 
+        self.logout()
         return all_records
 
     async def async_update(self):
@@ -124,7 +124,7 @@ class AcwdWaterUsageSensor(Entity):
         data = {
             "username": self.username,
             "password": self.password,
-            "rememberme": True,
+            "rememberme": False,
             "calledFrom": "LN",
             "ExternalLoginId": "",
             "LoginMode": "1",
@@ -140,6 +140,14 @@ class AcwdWaterUsageSensor(Entity):
             return login_success
         _LOGGER.warning("Login failed: No response data")
         return False
+
+    def logout(self):
+        response = self.session.get(BASE_URL + 'signout.aspx')
+        # Check if the logout was successful (optional)
+        if response.status_code == 200:
+            _LOGGER.debug("Logout successful")
+        else:
+            _LOGGER.warning("Logout failed. Status code:", response.status_code)
 
     def bind_multi_meter(self):
         api_url = USAGES_API_PREFIX + "BindMultiMeter"
@@ -162,9 +170,6 @@ class AcwdWaterUsageSensor(Entity):
             return response_json
         _LOGGER.warning("Billing details failed: No response data")
         return None
-
-    def is_session_valid(self):
-        return self.meter_number is not None
 
     def call_load_water_usage_api(self, type, mode, str_date):
         api_url = USAGES_API_PREFIX + "LoadWaterUsage"
