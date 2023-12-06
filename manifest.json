@@ -1,7 +1,0 @@
-{
-  "domain": "acwd_water_usage",
-  "name": "ACWD Water Usage",
-  "version": "1.0.0",
-  "requirements": ["beautifulsoup4", "pickle", "requests"],
-  "dependencies": []
-}
