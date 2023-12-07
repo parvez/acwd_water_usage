@@ -1,0 +1,10 @@
+{
+  "name": "ACWD Water Usage",
+  "content_in_root": false,
+  "zip_release": false,
+  "render_readme": true,
+  "country": "US",
+  "documentation": "https://www.github.com/parvez/acwd_water_usage",
+  "issue_tracker": "https://www.github.com/parvez/acwd_water_usage/issues",
+  "categories": ["integration"]
+}

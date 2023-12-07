@@ -1,4 +1,4 @@
-"""Platform for ACWD Water Usage sensor integration."""
+"""Platform for ACWD Water Usage integration."""
 import logging
 import requests
 import json
@@ -17,8 +17,8 @@ DEFAULT_API_PREFIX = BASE_URL + "default.aspx/"
 USAGES_API_PREFIX = BASE_URL + "Usages.aspx/"
 BILLING_API_PREFIX = BASE_URL + "BillDashboard.aspx/"
 
-class AcwdWaterUsageSensor(Entity):
-    """Representation of an ACWD Water Usage Sensor."""
+class AcwdWaterUsage(Entity):
+    """Representation of an ACWD Water Usage."""
 
     def __init__(self, hass, username, password):
         """Initialize the sensor."""
@@ -32,7 +32,7 @@ class AcwdWaterUsageSensor(Entity):
         self.billing_details = {}
         self.dates = []
         self.time_series_data = []  # List to store time series data
-        _LOGGER.info("ACWD Water Usage Sensor initialized")
+        _LOGGER.info("ACWD Water Usage initialized")
 
     @property
     def should_poll(self):
@@ -230,9 +230,9 @@ class AcwdWaterUsageSensor(Entity):
         return date_x_days_ago.strftime("%B %d, %Y")
 
 async def async_setup_entry(hass, config_entry, async_add_entities):
-    """Set up the ACWD Water Usage sensor from a config entry."""
+    """Set up the ACWD Water Usage from a config entry."""
     username = config_entry.data["username"]
     password = config_entry.data["password"]
 
-    sensor = AcwdWaterUsageSensor(hass, username, password)
+    sensor = AcwdWaterUsage(hass, username, password)
     async_add_entities([sensor], True)

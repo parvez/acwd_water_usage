@@ -1,4 +1,4 @@
-from .sensor import AcwdWaterUsageSensor
+from .sensor import AcwdWaterUsage
 from .const import DOMAIN
 
 async def async_setup(hass, config):

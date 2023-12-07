@@ -1,6 +1,6 @@
-# ACWD Water Usage Sensor for Home Assistant
+# ACWD Water Usage for Home Assistant
 
-The ACWD Water Usage Sensor is an integration for Home Assistant that enables users to monitor their water consumption data provided by the Alameda County Water District. This custom component fetches water usage details, billing information, and presents historical usage data in an easily digestible format within the Home Assistant UI.
+The ACWD Water Usage is an integration for Home Assistant that enables users to monitor their water consumption data provided by the Alameda County Water District. This custom component fetches water usage details, billing information, and presents historical usage data in an easily digestible format within the Home Assistant UI.
 
 ## Features
 
@@ -17,7 +17,7 @@ The ACWD Water Usage Sensor is an integration for Home Assistant that enables us
 
 ## Configuration
 
-Once you have installed the ACWD Water Usage Sensor integration, you can configure it directly from the Home Assistant UI:
+Once you have installed the ACWD Water Usage integration, you can configure it directly from the Home Assistant UI:
 
 1. Navigate to **Settings** > **Devices & Services** in Home Assistant.
 2. Click the **+ ADD INTEGRATION** button at the bottom right of the page.
