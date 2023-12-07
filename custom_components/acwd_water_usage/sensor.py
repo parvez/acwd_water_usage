@@ -40,6 +40,11 @@ class AcwdWaterUsage(Entity):
         return True
 
     @property
+    def unique_id(self):
+        """Return unique ID."""
+        return f"acwd_{self.username}"
+
+    @property
     def name(self):
         return 'ACWD Water Usage'
 
