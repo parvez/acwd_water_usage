@@ -4,7 +4,14 @@ import requests
 import json
 from datetime import datetime, timedelta
 from bs4 import BeautifulSoup
+from homeassistant.components.recorder.models import StatisticData, StatisticMetaData
+from homeassistant.components.recorder.statistics import async_add_external_statistics
+from homeassistant.components.sensor import SensorDeviceClass, SensorStateClass
+from homeassistant.const import UnitOfVolume
 from homeassistant.helpers.entity import Entity
+from homeassistant.util import dt as dt_util
+
+from .const import DOMAIN
 
 # Set the scan interval to 3 hours
 SCAN_INTERVAL = timedelta(hours=3)
@@ -53,8 +60,20 @@ class AcwdWaterUsage(Entity):
         return self._state
 
     @property
+    def state_class(self):
+        return SensorStateClass.TOTAL
+
+    @property
     def unit_of_measurement(self):
-        return 'gallons'
+        return UnitOfVolume.GALLONS
+
+    @property
+    def device_class(self):
+        return SensorDeviceClass.WATER
+
+    @property
+    def icon(self):
+        return "mdi:water"
 
     def get_water_usage(self, num_days=3):
         """Fetch and combine water usage data for a specified number of past days."""
@@ -92,11 +111,34 @@ class AcwdWaterUsage(Entity):
         self.logout()
         return all_records
 
+    def update_statistics(self, new_data: list[tuple[str, float]]):
+        stats_meta = StatisticMetaData(
+            has_mean=False,
+            has_sum=True,
+            name="ACWD Water Usage",
+            source=DOMAIN,
+            statistic_id=f"{DOMAIN}:{self.meter_number}_usage",
+            unit_of_measurement=UnitOfVolume.GALLONS,
+        )
+
+        usage_sum = 0
+        stats_data = []
+        for datetime_str, usage in new_data:
+            localized_timestamp = datetime.fromisoformat(datetime_str).replace(
+                tzinfo=dt_util.DEFAULT_TIME_ZONE
+            )
+            usage_sum += usage
+            stats_data.append(StatisticData(start=localized_timestamp, state=usage, sum=usage_sum))
+
+        async_add_external_statistics(self.hass, stats_meta, stats_data)
+
     async def async_update(self):
         try:
             _LOGGER.debug("Getting Time Series Data")
             new_data = await self.hass.async_add_executor_job(self.get_water_usage, 7)  # Fetch data for 7 days
             if new_data:
+                self.update_statistics(new_data)
+
                 self.time_series_data.extend(new_data)
 
                 # Calculate the total gallons by summing up the usage values
