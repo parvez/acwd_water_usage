@@ -161,7 +161,14 @@ class AcwdWaterUsage(Entity):
 
         response_json = self.make_api_request(api_url, headers, data)
         if response_json:
-            return response_json.get('MeterDetails', [{}])[0].get('MeterNumber', '')
+            meters = response_json.get("MeterDetails", [{}])
+            # Iterate until we find a meter where 'Advanced Meter Infrastructure' == TRUE
+            for meter in meters:
+                if meter.get("IsAMI"):
+                    return meter.get("MeterNumber", "")
+            # Otherwise, return the first meter
+            return meters[0].get("MeterNumber", "")
+
         _LOGGER.warning("Meter details failed: No response data")
         return None
 
