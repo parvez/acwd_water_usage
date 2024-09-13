@@ -43,7 +43,7 @@ class AcwdWaterUsage(Entity):
 
     @property
     def should_poll(self):
-        """Return False as updates are not needed via polling."""
+        """Return True as updates are needed via polling."""
         return True
 
     @property
