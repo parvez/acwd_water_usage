@@ -8,7 +8,7 @@ async def async_setup(hass, config):
 async def async_setup_entry(hass, config_entry):
     """Set up ACWD Water Usage from a config entry."""
     hass.async_create_task(
-        hass.config_entries.async_forward_entry_setup(config_entry, "sensor")
+        hass.config_entries.async_forward_entry_setups(config_entry, "sensor")
     )
     return True
 
